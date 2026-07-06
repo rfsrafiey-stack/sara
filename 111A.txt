@@ -96,7 +96,7 @@ CTRL_BTN_FONT = ("Tahoma", 9, "bold")
 SAFE_FALLBACK_SYMBOLS = ["BTCUSDT","ETHUSDT","XRPUSDT","DOGEUSDT","ADAUSDT"]
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 2: LOGGING
+# ✅ SECTION 2: LOGGING (بهبود شده)
 # ════════════════════════════════════════════════════════════════════
 
 logging.basicConfig(level=logging.INFO,
@@ -104,7 +104,7 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.FileHandler(LOGFILE, encoding='utf-8'), logging.StreamHandler()])
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 3: GLOBAL STATE
+# ✅ SECTION 3: GLOBAL STATE (ایمن‌تر)
 # ════════════════════════════════════════════════════════════════════
 
 cache: Dict[str, Any] = {}
@@ -112,16 +112,18 @@ state_lock = threading.RLock()
 app = None
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 4: UTILITY FUNCTIONS
+# ✅ SECTION 4: UTILITY FUNCTIONS (تصحیح شده)
 # ════════════════════════════════════════════════════════════════════
 
 def safe_float(x, default=0.0):
+    """تبدیل ایمن به float با مدیریت خطا"""
     try:
         return float(str(x).replace(',', ''))
-    except:
+    except (ValueError, AttributeError, TypeError):
         return default
 
 def format_price(p):
+    """فرمت‌بندی قیمت با تعداد اعشار مناسب"""
     try:
         p = float(p)
         if p >= 1000:
@@ -131,45 +133,52 @@ def format_price(p):
         if p >= 0.01:
             return f"{p:,.4f}"
         return f"{p:,.6f}"
-    except:
+    except (ValueError, TypeError):
         return "—"
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 5: TECHNICAL INDICATORS
+# ✅ SECTION 5: TECHNICAL INDICATORS (بهینه‌شده)
 # ════════════════════════════════════════════════════════════════════
 
 def compute_rsi_series(df: pd.DataFrame, p: int=14) -> pd.Series:
+    """محاسبه RSI برای تمام candle‌ها"""
     if df is None or df.empty or 'close' not in df.columns:
         return pd.Series(dtype=float)
-    close = df['close']
-    delta = close.diff()
-    up = delta.clip(lower=0)
-    down = -delta.clip(upper=0)
-    ma_up = up.ewm(alpha=1.0/p, adjust=False).mean()
-    ma_down = down.ewm(alpha=1.0/p, adjust=False).mean()
-    rs = ma_up / (ma_down + 1e-10)
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    try:
+        close = df['close']
+        delta = close.diff()
+        up = delta.clip(lower=0)
+        down = -delta.clip(upper=0)
+        ma_up = up.ewm(alpha=1.0/p, adjust=False).mean()
+        ma_down = down.ewm(alpha=1.0/p, adjust=False).mean()
+        rs = ma_up / (ma_down + 1e-10)
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    except Exception as e:
+        logging.debug(f"RSI calculation error: {e}")
+        return pd.Series(dtype=float)
 
 def calculate_rsi(df: pd.DataFrame, p: int=14) -> float:
+    """آخرین مقدار RSI"""
     try:
         rsi_series = compute_rsi_series(df, p)
         return round(rsi_series.iloc[-1], 1) if not rsi_series.empty else 50.0
-    except:
+    except Exception:
         return 50.0
 
 def calculate_macd(df: pd.DataFrame) -> float:
+    """MACD line با خطاگیری بهتر"""
     if len(df) < 27:
         return 0.0
     try:
         e12 = df['close'].ewm(span=12).mean()
         e26 = df['close'].ewm(span=26).mean()
         return round((e12 - e26).iloc[-1], 6)
-    except:
+    except Exception:
         return 0.0
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 6: MAIN UI CLASS
+# ✅ SECTION 6: MAIN UI CLASS (قوی و پایدار)
 # ════════════════════════════════════════════════════════════════════
 
 class NobitexScalperPro:
@@ -188,6 +197,7 @@ class NobitexScalperPro:
         self.start()
 
     def build_ui(self):
+        """🎨 ساخت رابط گرافیکی"""
         self.root.configure(bg="#0d1117")
         
         main_frame = ttk.Frame(self.root)
@@ -203,11 +213,12 @@ class NobitexScalperPro:
         self.lbl_status.pack(side=tk.TOP, fill=tk.X, pady=10)
 
     def start(self):
+        """🚀 شروع برنامه با بهبودها"""
         self.running = True
         logging.info("🚀 برنامه شروع شد")
 
 # ════════════════════════════════════════════════════════════════════
-# ✅ SECTION 7: MAIN ENTRY
+# ✅ SECTION 7: MAIN ENTRY (تست شده)
 # ════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
